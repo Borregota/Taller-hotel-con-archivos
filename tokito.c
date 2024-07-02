@@ -3,7 +3,8 @@
 #define tamanoclien 30
 
 int main(int argc, char *argv[]) {
-    char clientes[tamanoclien][2][40];
+    char clientes[tamanoclien][2][40] = {{0}};
+    int numClientes = 0;
 
     char habitaciones[9][3][40] = {{"1","simple","Dan Carlton"},
                                    {"2","doble","Dan Carlton"},
@@ -30,10 +31,21 @@ int main(int argc, char *argv[]) {
 
     int opcion, numHabitacion, numReserva;
 
-    FILE *clientesFile = fopen("clientes.txt", "w"); 
-    if (clientesFile == NULL) {
-        printf("Error opening clientes file\n");
-        return 1;
+    FILE *clientesFile = fopen("clientes.txt", "r");
+    if (clientesFile != NULL) {
+        while (fscanf(clientesFile, "%s %s", clientes[numClientes][0], clientes[numClientes][1]) != EOF) {
+            numClientes++;
+        }
+        fclose(clientesFile);
+    }
+
+    FILE *reservasFile = fopen("reservas.txt", "r");
+    if (reservasFile != NULL) {
+        int i = 0;
+        while (fscanf(reservasFile, "%d %d %d %d", &reservas[i][0], &reservas[i][1], &reservas[i][2], &reservas[i][3]) != EOF) {
+            i++;
+        }
+        fclose(reservasFile);
     }
 
     do {
@@ -41,11 +53,17 @@ int main(int argc, char *argv[]) {
         scanf("%d", &opcion);
         switch (opcion) {
         case 1:
-            ingresarClientes(clientes, tamanoclien);
+            ingresarClientes(clientes, tamanoclien, &numClientes);
             //Guarda los datos de los clientes
-            for (int i = 0; i < tamanoclien; i++) {
+            clientesFile = fopen("clientes.txt", "w"); 
+            if (clientesFile == NULL) {
+                printf("Error al abrir el archivo de clientes\n");
+                return 1;
+            }
+            for (int i = 0; i < numClientes; i++) {
                 fprintf(clientesFile, "%s %s\n", clientes[i][0], clientes[i][1]);
             }
+            fclose(clientesFile);
             break;
         case 2:
             printf("1.Por tamano\n2.Por Hotel\n>>");
@@ -62,7 +80,7 @@ int main(int argc, char *argv[]) {
             }
             break;
         case 3:
-            realizarReserva(numHabitacion, habitaciones, clientes, reservas, precios, tamanoclien);
+            realizarReserva(numHabitacion, habitaciones, clientes, reservas, precios, tamanoclien, &numClientes);
             break;
         case 4:
             buscarReservaPorCedula(&numReserva, clientes, reservas, tamanoclien);
@@ -79,10 +97,8 @@ int main(int argc, char *argv[]) {
         scanf("%d", &opcion);
     } while (opcion == 1);
 
-    fclose(clientesFile);
-
     // Guarda todos los datos ingresados en el archivo de texto reservas.txt
-    FILE *reservasFile = fopen("reservas.txt", "w");
+    reservasFile = fopen("reservas.txt", "w");
     if (reservasFile == NULL) {
         printf("Error opening reservas file\n");
         return 1;
@@ -90,15 +106,7 @@ int main(int argc, char *argv[]) {
 
     for (int i = 0; i < 10; i++) {
         if (reservas[i][0] != -1) {
-            int habitacionIndex = reservas[i][0] - 1;
-            int clienteIndex = reservas[i][1];
-            fprintf(reservasFile, "Reserva #%d:\n", i + 1);
-            fprintf(reservasFile, "Habitacion: %s\n", habitaciones[habitacionIndex][0]);
-            fprintf(reservasFile, "Tipo: %s\n", habitaciones[habitacionIndex][1]);
-            fprintf(reservasFile, "Hotel: %s\n", habitaciones[habitacionIndex][2]);
-            fprintf(reservasFile, "Precio: %.2f\n", precios[habitacionIndex]);
-            fprintf(reservasFile, "Cliente: %s\n", clientes[clienteIndex][1]);
-            fprintf(reservasFile, "Estado: %s\n\n", reservas[i][3] == 1 ? "Pagada" : "Pendiente");
+            fprintf(reservasFile, "%d %d %d %d\n", reservas[i][0], reservas[i][1], reservas[i][2], reservas[i][3]);
         }
     }
 
