@@ -1,116 +1,157 @@
 #include <stdio.h>
 #include "funcionest.h"
-#define tamanoclien 30
+#include <string.h>
 
-int main(int argc, char *argv[]) {
-    char clientes[tamanoclien][2][40] = {{0}};
-    int numClientes = 0;
+#define TAMANOClien 30
+int nombresingresados=0;
 
-    char habitaciones[9][3][40] = {{"1","simple","Dan Carlton"},
-                                   {"2","doble","Dan Carlton"},
-                                   {"3","triple","Dan Carlton"},
-                                   {"4","simple","Swissotel"},
-                                   {"5","doble","Swissotel"},
-                                   {"6","triple","Swissotel"},
-                                   {"7","simple","Sheraton"},
-                                   {"8","doble","Sheraton"},
-                                   {"9","triple","Sheraton"}};
-
-    double precios[9] = {90, 120, 160, 65, 100, 140, 85, 110, 150};
-
-    int reservas[10][4] = {{-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0},
-                           {-1, -1, -1, 0}};
-
-    int opcion, numHabitacion, numReserva;
-
-    FILE *clientesFile = fopen("clientes.txt", "r");
-    if (clientesFile != NULL) {
-        while (fscanf(clientesFile, "%s %s", clientes[numClientes][0], clientes[numClientes][1]) != EOF) {
-            numClientes++;
-        }
-        fclose(clientesFile);
+void ingresarClientes(char clientes[][2][40], int tamanoclien, int *numClientes){
+    int i, cantidad;
+    printf("Ingrese la cantidad de clientes que desea ingresar:\n ");
+    scanf("%d", &cantidad);
+    if (*numClientes + cantidad > tamanoclien) {
+        printf("Error: No hay suficiente espacio en la matriz para almacenar %d clientes.\n", cantidad);
+        fflush(stdin);
+        return;
     }
-
-    FILE *reservasFile = fopen("reservas.txt", "r");
-    if (reservasFile != NULL) {
-        int i = 0;
-        while (fscanf(reservasFile, "%d %d %d %d", &reservas[i][0], &reservas[i][1], &reservas[i][2], &reservas[i][3]) != EOF) {
-            i++;
+    for (i = *numClientes; i < *numClientes + cantidad; i++) {
+        printf("Ingrese el nombre del cliente %d: \n", i+1);
+        fflush(stdin);
+        scanf("%s", clientes[i][0]);
+        printf("Ingrese la cedula del cliente %d: \n", i+1);
+        scanf("%s", clientes[i][1]);
+        fflush(stdin);
+        int existe = 0;
+        for (int j = 0; j < *numClientes; j++) {
+            if (strcmp(clientes[j][1], clientes[i][1]) == 0) {
+                existe = 1;
+                break;
+            }
         }
-        fclose(reservasFile);
+        if (existe) {
+            printf("La cedula ya se ha ingresado anteriormente.\n");
+            i--;
+            fflush (stdin);
+        }
     }
+    *numClientes += cantidad;
+}
 
-    do {
-        printf("Escoja una opcion:\n1.Ingresar clientes\n2.Buscar Habitacion\n3.Realizar reserva\n4.Ver reservas\n5.Pagar Reserva\n>>");
-        scanf("%d", &opcion);
-        switch (opcion) {
-        case 1:
-            ingresarClientes(clientes, tamanoclien, &numClientes);
-            //Guarda los datos de los clientes
-            clientesFile = fopen("clientes.txt", "w"); 
-            if (clientesFile == NULL) {
-                printf("Error al abrir el archivo de clientes\n");
-                return 1;
-            }
-            for (int i = 0; i < numClientes; i++) {
-                fprintf(clientesFile, "%s %s\n", clientes[i][0], clientes[i][1]);
-            }
-            fclose(clientesFile);
-            break;
-        case 2:
-            printf("1.Por tamano\n2.Por Hotel\n>>");
-            scanf("%d", &opcion);
-            switch (opcion) {
-            case 1:
-                buscarPorTamano(&numHabitacion, habitaciones, precios);
-                break;
-            case 2:
-                buscarHotel(&numHabitacion, habitaciones, precios);
-                break;
-            default:
-                break;
-            }
-            break;
-        case 3:
-            realizarReserva(numHabitacion, habitaciones, clientes, reservas, precios, tamanoclien, &numClientes);
-            break;
-        case 4:
-            buscarReservaPorCedula(&numReserva, clientes, reservas, tamanoclien);
-            imprimirReserva(numReserva, reservas, habitaciones, precios, clientes, tamanoclien);
-            break;
-        case 5:
-            buscarReservaPorCedula(&numReserva, clientes, reservas, tamanoclien);
-            pagarReserva(numReserva, reservas, habitaciones, precios, clientes, tamanoclien);
-            break;
-        default:
+void buscarPorTamano(int *numHabitacion,char habitaciones[][3][40],double precios[]){
+    char tipo[40];
+    printf("Ingrese el tamano de habitacion que desea buscar: ");
+    scanf("%s",tipo);
+    printf("#\t\tTamano\t\tHotel\t\tPrecio\n");
+    int encontrado=0;
+    for (int i = 0; i < 9; i++) {
+        if (strcmp(habitaciones[i][1],tipo)==0) {
+            printf("%s\t\t%s\t\t%s\t\t%lf\n",habitaciones[i][0],habitaciones[i][1],habitaciones[i][2],precios[i]);
+            encontrado=1;
+        }
+    } 
+    if (!encontrado) {
+        printf("No se encontro ese tipo de habitacion\n");
+    } else {
+        printf("Elija la habitacion que desea reservar: ");
+        scanf("%d", numHabitacion);
+    }
+}
+
+void buscarHotel(int *numHabitacion, char habitaciones[][3][40], double precios[]){
+    char hotel[40];
+    printf("Ingrese el nombre del hotel que desea buscar: ");
+    scanf("%s",hotel);
+    printf("#\t\tTamano\t\tHotel\t\tPrecio\n");
+    int encontrado=0;
+    for (int i = 0; i < 9; i++) {
+        if (strcmp(habitaciones[i][2],hotel)==0) {
+            printf("%s\t\t%s\t\t%s\t\t%lf\n",habitaciones[i][0], habitaciones[i][1], habitaciones [i][2], precios[i]);
+            encontrado=1;
+        }
+    }
+    if (!encontrado) {
+        printf("\nNo se encontro el hotel que deseas buscar\n");
+    } else {
+        printf("Elija la habitacion que desea reservar: ");
+        scanf("%d",numHabitacion); 
+    }
+}
+
+void realizarReserva(int numHabitacion, char habitaciones[9][3][40], char clientes[TAMANOClien][2][40], int reservas[10][4], double precios[9], int tamanoclien, int *numClientes) {
+    int clienteIndex;
+    char cedula[40];
+    printf("Ingrese la cedula del cliente: ");
+    scanf("%s", cedula);
+    clienteIndex = -1;
+
+    for (int i = 0; i < *numClientes; i++) {
+        if (strcmp(clientes[i][1], cedula) == 0) {
+            clienteIndex = i;
             break;
         }
-        printf("Desea elegir otra opcion \n1 = si \t\t2 = no\n");
-        scanf("%d", &opcion);
-    } while (opcion == 1);
-
-    // Guarda todos los datos ingresados en el archivo de texto reservas.txt
-    reservasFile = fopen("reservas.txt", "w");
-    if (reservasFile == NULL) {
-        printf("Error opening reservas file\n");
-        return 1;
+    }
+    
+    if (clienteIndex == -1) {
+        printf("Cliente no encontrado.\n");
+        return;
     }
 
     for (int i = 0; i < 10; i++) {
-        if (reservas[i][0] != -1) {
-            fprintf(reservasFile, "%d %d %d %d\n", reservas[i][0], reservas[i][1], reservas[i][2], reservas[i][3]);
+        if (reservas[i][0] == -1) {
+            reservas[i][0] = clienteIndex;
+            reservas[i][1] = numHabitacion;
+            reservas[i][2] = 1;
+            reservas[i][3] = 0;
+            printf("Reserva realizada exitosamente.\n");
+            return;
         }
     }
+    printf("No hay espacio para nuevas reservas.\n");
+}
 
-    fclose(reservasFile);
+void buscarReservaPorCedula(int *numReserva, char clientes[][2][40], int reservas[10][4], int tamanoclien){
+    char cedula[40];
+    printf("Ingrese la cedula del cliente para buscar reserva: ");
+    scanf("%s",cedula);
+    int clienteIndex = -1;
+    for (int i = 0; i < tamanoclien; i++) {
+        if (strcmp(clientes[i][1], cedula) == 0) {
+            clienteIndex = i;
+            break;
+        }
+    }
+    if (clienteIndex == -1) {
+        printf("No se encontro el cliente.\n");
+        *numReserva = -1;
+        return;
+    }
 
-    return 0;
+    for (int i = 0; i < 10; i++) {
+        if (reservas[i][0] == clienteIndex) {
+            *numReserva = i;
+            return;
+        }
+    }
+    printf("No se encontraron reservas para el cliente.\n");
+    *numReserva = -1;
+}
+
+void imprimirReserva(int numReserva, int reservas[10][4], char habitaciones[9][3][40], double precios[9], char clientes[TAMANOClien][2][40], int tamanoclien){
+    if (numReserva == -1) return;
+    int clienteIndex = reservas[numReserva][0];
+    int habitacionIndex = reservas[numReserva][1] - 1;
+    printf("Reserva #%d\n", numReserva);
+    printf("Cliente: %s\n", clientes[clienteIndex][0]);
+    printf("Cedula: %s\n", clientes[clienteIndex][1]);
+    printf("Habitacion: %s\n", habitaciones[habitacionIndex][0]);
+    printf("Tamano: %s\n", habitaciones[habitacionIndex][1]);
+    printf("Hotel: %s\n", habitaciones[habitacionIndex][2]);
+    printf("Precio: %.2f\n", precios[habitacionIndex]);
+    printf("Estado de pago: %s\n", reservas[numReserva][3] == 1 ? "Pagado" : "No Pagado");
+}
+
+void pagarReserva(int numReserva, int reservas[10][4], char habitaciones[9][3][40], double precios[9], char clientes[TAMANOClien][2][40], int tamanoclien) {
+    if (numReserva == -1) return;
+    reservas[numReserva][3] = 1;
+    printf("La reserva ha sido pagada.\n");
 }
